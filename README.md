@@ -90,6 +90,8 @@ uv add --dev <package>
 * `media/`
   * image files
   * video files
+* `src/`
+  * main production code (.py)
 
 
 ## License

@@ -15,15 +15,15 @@ This file gives AI agents and contributors consistent context for working on the
 
 ## Commands
 
-* Create venv and install deps: `uv sync`
-* Run lint: `uv run ruff check .` and `uv run ruff format .`
+* Create venv and install production deps: `uv sync`
+* Install production + dev deps: `uv sync --extra dev`
+* To lint: `uv run ruff check .` and `uv run ruff format .`
 * Run tests: `uv run pytest` or `uv run pytest tests/`
-* Keep the README updated when new code is written and it materially changes how a user may interact with the code
+* Add production deps with `uv add <package>`, dev deps with `uv add --dev <package>`.
+* Prefer `uv run` for one-off commands so they use the project venv.
 
 
 ## Conventions
-
-* Prefer `uv run` for one-off commands so they use the project venv.
-* Add production deps with `uv add <package>`, dev deps with `uv add --dev <package>`.
 * Keep Ruff and pytest config in `pyproject.toml` under `[tool.ruff]` and `[tool.pytest.ini_options]`.
 * Use `*` for bullet lists
+* Keep the README updated when new code is written and it materially changes how a user may interact with the code
