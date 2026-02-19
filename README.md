@@ -2,6 +2,13 @@
 
 This is an open-source text-to-drone flight map software. Describe any  object or pattern in text (i.e. "a green dragon") and Constellate Labs turns it into a drone light show flight map that is congruent with Skybrush Studio.
 
+Pipeline steps (see [ENG_SPEC.md](ENG_SPEC.md) for details):
+1. LLM-generated SVG
+2. Deterministic geometry processing
+3. Poisson disk sampling
+4. Physical constraint enforcement
+5. SkyBrush export
+
 ## Requirements
 * Python 3.10+
 * [uv](https://docs.astral.sh/uv/installation/) for package management
@@ -77,6 +84,24 @@ uv add <package>
 uv add --dev <package>
 ```
 
+## Usage
+
+Run the full pipeline from a natural language prompt and write a SkyBrush-compatible JSON file:
+
+```python
+from constellate_labs import run_pipeline
+
+show = run_pipeline(
+    "a simple circle",
+    output_path="show.json",
+    show_name="My Show",
+)
+# Optional: pass a custom LLM callable for Stage 1
+# show = run_pipeline("a green dragon", llm_call=my_llm_fn, output_path="dragon.json")
+```
+
+Stages can also be used individually (see `constellate_labs.pipeline` and `constellate_labs.utils`).
+
 ## Project layout
 
 * `pyproject.toml`
@@ -85,13 +110,17 @@ uv add --dev <package>
   * tool config (ruff, pytest)
 * `AGENTS.md`
   * context for AI agents and contributors
+* `ENG_SPEC.md`
+  * engineering specification and pipeline details
 * `tests/`
-  * pytest .py files
+  * pytest test modules
 * `media/`
-  * image files
-  * video files
-* `src/`
-  * main production code (.py)
+  * image and video assets
+* `src/constellate_labs/`
+  * `models.py` — data types (Waypoint, ProcessedPath, FlightShow, etc.)
+  * `utils/` — geometry, sampling, and validation helpers
+  * `pipeline/` — pipeline stages (LLM SVG, geometry, Poisson sampling, constraints, SkyBrush export)
+  * `pipeline/runner.py` — `run_pipeline()` entrypoint
 
 
 ## License

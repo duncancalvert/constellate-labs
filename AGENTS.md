@@ -23,7 +23,12 @@ This file gives AI agents and contributors consistent context for working on the
 * Prefer `uv run` for one-off commands so they use the project venv.
 
 
+## Code layout
+* Pipeline stages live in `src/constellate_labs/pipeline/` (stage1_llm_svg through stage5_skybrush, plus runner).
+* Reusable helpers live in `src/constellate_labs/utils/` (geometry, sampling, validation).
+* Data models are in `src/constellate_labs/models.py`. Keep stages modular and use utils for shared logic.
+
 ## Conventions
 * Keep Ruff and pytest config in `pyproject.toml` under `[tool.ruff]` and `[tool.pytest.ini_options]`.
-* Use `*` for bullet lists
-* Keep the README updated when new code is written and it materially changes how a user may interact with the code
+* Use `*` for bullet lists.
+* Keep the README.md, ENG_SPEC.md, and AGENTS.md files updated when new code is written and it may change the documentation in those documents.
