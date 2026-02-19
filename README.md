@@ -19,10 +19,10 @@ On Mac this can be handled via
 brew install uv
 ```
 
-### Step 3: Create a virtual environment and install dependencies with uv (uv uses a `.venv` in the project by default):
-This does the following:
-* Creates a `.venv` file
-* Installs the dependencies listed in the pyproject.toml
+### 3. Create a virtual environment (`.venv`) and install dependencies with uv
+The below commands do the following:
+* Create a `.venv` file
+* Install the dependencies listed in the pyproject.toml
 * Syncs the uv lockfile.
 
 For PROD dependencies only:
@@ -35,63 +35,62 @@ For PROD + DEV dependencies:
 uv sync --extra dev
 ```
 
-3. (Optional) Use the venv directly:
-
-   ```bash
-   source .venv/bin/activate   # macOS/Linux
-   # or: .venv\Scripts\activate  # Windows
-   ```
-
-   Or run commands via uv so the project env is used automatically:
-
-   ```bash
-   uv run python -c "print('hello')"
-   ```
-
 ## Development
 
 ### Linting (Ruff)
 
-- Lint:
-  ```bash
-  uv run ruff check .
-  ```
-- Format:
-  ```bash
-  uv run ruff format .
-  ```
+Use the following command to lint:
+```bash
+uv run ruff check .
+```
 
-### Tests (pytest)
+Use the following command to format:
+```bash
+uv run ruff format .
+```
 
-- Run all tests:
-  ```bash
-  uv run pytest
-  ```
-- Run with verbose output:
-  ```bash
-  uv run pytest -v
-  ```
-- Run a specific file or directory:
-  ```bash
-  uv run pytest tests/
-  ```
+### Testing (pytest)
+
+Run all tests:
+```bash
+uv run pytest
+```
+
+Run with verbose output:
+```bash
+uv run pytest -v
+```
+
+Run a specific file or directory:
+```bash
+uv run pytest tests/
+```
 
 ### Adding dependencies
 
-- Production dependency:
-  ```bash
-  uv add <package>
-  ```
-- Dev dependency (e.g. pytest, ruff):
-  ```bash
-  uv add --dev <package>
-  ```
+Production dependency:
+```bash
+uv add <package>
+```
+-Dev dependency (e.g. pytest, ruff):
+```bash
+uv add --dev <package>
+```
 
 ## Project layout
 
-- `pyproject.toml` — project metadata, dependencies, and tool config (Ruff, pytest)
-- `AGENTS.md` — context for AI agents and contributors
-- `tests/` — pytest test suite
+* `pyproject.toml`
+  * project metadata
+  * dependencies
+  * tool config (ruff, pytest)
+* `AGENTS.md`
+  * context for AI agents and contributors
+* `tests/`
+  * pytest .py files
+* `media/`
+  * image files
+  * video files
+
 
 ## License
 
