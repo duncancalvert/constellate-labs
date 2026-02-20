@@ -1,6 +1,6 @@
 <picture align="left">
-  <source media="(prefers-color-scheme: dark)" srcset="media/images/constellate_labs_banner_img.png">
-  <img alt="Constellate Labs Banner Logo" src="media/images/constellate_labs_banner_img.png">
+  <source media="(prefers-color-scheme: dark)" srcset="media/images/constellate_labs_banner_img2.png">
+  <img alt="Constellate Labs Banner Logo" src="media/images/constellate_labs_banner_img2.png">
 </picture>
 
 ## What is Constellate Labs
