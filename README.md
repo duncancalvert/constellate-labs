@@ -1,13 +1,15 @@
-# Constellate Labs
+<picture align="left">
+  <source media="(prefers-color-scheme: dark)" srcset="media/images/constellate_labs_banner_img.png">
+  <img alt="Constellate Labs Banner Logo" src="media/images/constellate_labs_banner_img.png">
+</picture>
 
-This is an open-source text-to-drone flight map software. Describe any  object or pattern in text (i.e. "a green dragon") and Constellate Labs turns it into a drone light show flight map that is congruent with Skybrush Studio.
+## What is Constellate Labs
 
-Pipeline steps (see [ENG_SPEC.md](ENG_SPEC.md) for details):
-1. LLM-generated SVG
-2. Deterministic geometry processing
-3. Poisson disk sampling
-4. Physical constraint enforcement
-5. SkyBrush export
+Constellate Labs is an open-source text-to-drone flight map software. Traditional drone flight software requires intense manual design and planning. Constellate Labs super charges this process by allowing users to create first drafts of working drone flight code using natural language generation.
+
+Describe any  object or pattern in text (i.e. "a green dragon") and Constellate Labs turns it into a drone light show flight map that is congruent with Skybrush Studio, one of the main open-source drone light show softwares.
+
+For the full pipeline steps and architecture, see [ENG_SPEC.md](ENG_SPEC.md).
 
 ## Requirements
 * Python 3.10+
