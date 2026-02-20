@@ -2,7 +2,7 @@
 
 from constellate_labs.pipeline.runner import run_pipeline
 from constellate_labs.pipeline.stage1_llm_svg import (
-    LLMConfig,
+    OpenAILLMConfig,
     build_llm_call,
     generate_svg,
 )
@@ -15,7 +15,7 @@ __all__ = [
     "run_pipeline",
     "generate_svg",
     "build_llm_call",
-    "LLMConfig",
+    "OpenAILLMConfig",
     "process_geometry",
     "sample_waypoints",
     "enforce_constraints",

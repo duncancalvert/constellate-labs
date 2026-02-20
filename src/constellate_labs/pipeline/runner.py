@@ -24,12 +24,16 @@ def run_pipeline(
     Run the full pipeline: prompt → SVG → geometry → sampling → constraints → SkyBrush.
     Optionally write the result to output_path.
     """
-    # Stage 1: LLM-generated SVG
+    # Stage 1: LLM-generated SVG (always saved to top-level svg_files folder; default from project root)
+    svg_files_dir = stage_kwargs.get("svg_files_dir")
+    if svg_files_dir is not None:
+        svg_files_dir = Path(svg_files_dir)
     svg_result = generate_svg(
         prompt,
         llm_call=llm_call,
         canvas_width=stage_kwargs.get("canvas_width", 100),
         canvas_height=stage_kwargs.get("canvas_height", 100),
+        svg_files_dir=svg_files_dir,
     )
 
     # Stage 2: Deterministic geometry processing

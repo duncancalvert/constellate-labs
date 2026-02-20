@@ -86,31 +86,20 @@ uv add --dev <package>
 
 ## Usage
 
-Run the full pipeline from a natural language prompt and write a SkyBrush-compatible JSON file. With no `llm_call`, Stage 1 uses a fallback circle SVG so the pipeline runs without an LLM.
+Run the full pipeline from a natural language prompt and write a SkyBrush-compatible JSON file. An LLM must be configured for Stage 1 (no fallback); pass `llm_call=build_llm_call(OpenAILLMConfig(...))` and set `OPENAI_API_KEY` (or pass `api_key` in config).
 
 ```python
 from constellate_labs import run_pipeline
+from constellate_labs.pipeline import OpenAILLMConfig, build_llm_call
 
+config = OpenAILLMConfig(model="gpt-4o")  # or "gpt-5.2" etc.; api_key from env if not set
 show = run_pipeline(
     "a simple circle",
+    llm_call=build_llm_call(config),
     output_path="show.json",
     show_name="My Show",
     number_of_drones=1,  # optional; default 1
 )
-```
-
-To use a real LLM (on-prem or GCP), pass `llm_call=build_llm_call(LLMConfig(...))`:
-
-```python
-from constellate_labs import run_pipeline
-from constellate_labs.pipeline import LLMConfig, build_llm_call
-
-# On-prem (e.g. Ollama at localhost:11434)
-config = LLMConfig(provider="on_prem", model_name="llama3", base_url="http://localhost:11434")
-# Or GCP Vertex AI / Model Garden
-# config = LLMConfig(provider="gcp", model_name="gemini-1.5-flash", project_id="my-project", location="us-central1")
-
-show = run_pipeline("a green dragon", llm_call=build_llm_call(config), output_path="dragon.json")
 ```
 
 You can pass more options as keyword arguments (e.g. `canvas_width`, `canvas_height`, `drone_spacing`, `min_distance`, `max_velocity`, `default_altitude`, `drone_placement_expand`). See `experiment_notebooks/02_pipeline_integration_test.ipynb` for a full list.
@@ -119,12 +108,9 @@ Stages can also be used individually (see `constellate_labs.pipeline` and `const
 
 ### LLM configuration (Stage 1)
 
-Stage 1 can use an on-prem model (OpenAI-compatible endpoint) or a GCP Vertex AI / Model Garden model:
+Stage 1 uses the **OpenAI Responses API** (MVP). An LLM must be configured; if `llm_call` is not provided, Stage 1 raises an error.
 
-* **On-prem**: Set `provider="on_prem"`, `model_name`, and `base_url` (e.g. `http://localhost:11434` for Ollama). Optional: `model_version`, `api_key`.
-* **GCP**: Set `provider="gcp"`, `model_name` (e.g. `gemini-1.5-flash`), `project_id`, and `location`. GCP support is included in production dependencies (`google-cloud-aiplatform`).
-
-Use `build_llm_call(LLMConfig(...))` to get a callable and pass it as `llm_call` to `generate_svg` or `run_pipeline`.
+* **OpenAI**: Use `OpenAILLMConfig(model="gpt-4o", api_key=None, base_url=None)`. `api_key` defaults to `OPENAI_API_KEY`; `base_url` is optional for custom endpoints. Pass `llm_call=build_llm_call(config)` to `generate_svg` or `run_pipeline`.
 
 ## Project layout
 
@@ -138,8 +124,8 @@ Use `build_llm_call(LLMConfig(...))` to get a callable and pass it as `llm_call`
   * engineering specification and pipeline details
 * `tests/`
   * pytest test modules
-* `media/`
-  * image and video assets
+* `svg_files/`
+  * Stage 1 generated SVG output (top-level, same level as `src/`)
 * `src/constellate_labs/`
   * `models.py` — data types (Waypoint, ProcessedPath, FlightShow, etc.)
   * `utils/` — geometry, sampling, and validation helpers

@@ -1,127 +1,66 @@
 """Stage 1: LLM-generated SVG (ENG_SPEC §3.1)."""
 
-import json
 import re
-import urllib.error
-import urllib.request
 from dataclasses import dataclass
-from typing import Callable, Literal
+from pathlib import Path
+from typing import Callable
 
-import vertexai
-from vertexai.generative_models import GenerativeModel
+from openai import OpenAI
 
 from constellate_labs.models import SvgResult
 
 
+def _project_root() -> Path:
+    """Project root (repo root, same level as src/). Resolved from this file's location."""
+    # .../src/constellate_labs/pipeline/stage1_llm_svg.py -> .../ (project root)
+    return Path(__file__).resolve().parents[4]
+
+
+def _default_svg_files_dir() -> Path:
+    """Top-level svg_files directory in the project (same level as src/)."""
+    return _project_root() / "svg_files"
+
+
 @dataclass
-class LLMConfig:
+class OpenAILLMConfig:
     """
-    Configurable LLM backend for SVG generation.
+    Configuration for the OpenAI Responses API (Stage 1 LLM).
     Use with build_llm_call() to get a callable for generate_svg(llm_call=...).
     """
-    provider: Literal["on_prem", "gcp"]
-    model_name: str
-    model_version: str | None = None
-    # On-prem (OpenAI-compatible endpoint, e.g. Ollama, LM Studio, vLLM)
-    base_url: str = "http://localhost:11434"
+    model: str = "gpt-4o"
     api_key: str | None = None
-    # GCP Vertex AI / Model Garden
-    project_id: str = ""
-    location: str = "us-central1"
-    endpoint_id: str | None = None  # reserved for future deployed-endpoint support
+    base_url: str | None = None
 
 
-def _default_llm_adapter(prompt: str) -> str:
-    """
-    Placeholder when no LLM is configured: return a simple circle SVG.
-    """
-    return _fallback_circle_svg()
-
-
-def _fallback_circle_svg() -> str:
-    """
-    Return a minimal valid SVG (circle) for testing/fallback
-    when an actual LLM call is not configured.
-    """
-    return """<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
-  <circle cx="50" cy="50" r="40" fill="none" stroke="green" stroke-width="2"/>
-</svg>"""
-
-
-def _call_on_prem(config: LLMConfig, prompt: str) -> str:
-    """Call an OpenAI-compatible chat endpoint (on-prem or local model)."""
-    url = config.base_url.rstrip("/") + "/v1/chat/completions"
-    model = config.model_name
-    if config.model_version:
-        model = f"{config.model_name}@{config.model_version}"
-    body = {
-        "model": model,
-        "messages": [
-            {"role": "user", "content": prompt},
-        ],
-        "max_tokens": 4096,
-    }
-    data = json.dumps(body).encode("utf-8")
-    req = urllib.request.Request(
-        url,
-        data=data,
-        headers={
-            "Content-Type": "application/json",
-            **({"Authorization": f"Bearer {config.api_key}"} if config.api_key else {}),
-        },
-        method="POST",
+def _call_openai(config: OpenAILLMConfig, prompt: str) -> str:
+    """Call OpenAI Responses API and return the output text."""
+    kwargs = {}
+    if config.api_key is not None:
+        kwargs["api_key"] = config.api_key
+    if config.base_url is not None:
+        kwargs["base_url"] = config.base_url
+    client = OpenAI(**kwargs)
+    response = client.responses.create(
+        model=config.model,
+        input=prompt,
     )
-    try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
-            out = json.loads(resp.read().decode())
-    except urllib.error.HTTPError as e:
-        raise RuntimeError(f"LLM request failed ({e.code}): {e.read().decode()}") from e
-    except urllib.error.URLError as e:
-        raise RuntimeError(f"LLM request failed: {e.reason}") from e
-    choices = out.get("choices") or []
-    if not choices:
-        raise RuntimeError("LLM returned no choices")
-    content = choices[0].get("message", {}).get("content") or ""
-    return content
+    return response.output_text or ""
 
 
-def _call_gcp(config: LLMConfig, prompt: str) -> str:
-    """Call GCP Vertex AI / Model Garden (GenerativeModel by model name)."""
-
-    if not config.project_id:
-        raise ValueError("LLMConfig(provider='gcp') requires project_id")
-    vertexai.init(project=config.project_id, location=config.location)
-    model_id = config.model_name
-    if config.model_version:
-        model_id = f"{config.model_name}@{config.model_version}"
-    model = GenerativeModel(model_id)
-    response = model.generate_content(prompt)
-    if not response.candidates or not response.candidates[0].content.parts:
-        raise RuntimeError("GCP model returned no content")
-    return response.candidates[0].content.parts[0].text
-
-
-def build_llm_call(config: LLMConfig) -> Callable[[str], str]:
+def build_llm_call(config: OpenAILLMConfig) -> Callable[[str], str]:
     """
-    Build a callable that invokes the configured LLM (on-prem or GCP).
-    Use as generate_svg(..., llm_call=build_llm_call(my_config)).
+    Build a callable that invokes the OpenAI Responses API.
+    Use as generate_svg(..., llm_call=build_llm_call(config)).
     """
-    if config.provider == "on_prem":
-        def _call(prompt: str) -> str:
-            return _call_on_prem(config, prompt)
-        return _call
-    if config.provider == "gcp":
-        def _call(prompt: str) -> str:
-            return _call_gcp(config, prompt)
-        return _call
-    raise ValueError(f"Unknown LLM provider: {config.provider}")
+
+    def _call(prompt: str) -> str:
+        return _call_openai(config, prompt)
+
+    return _call
 
 
 def _extract_svg_from_response(text: str) -> str | None:
-    """
-    Extract first valid SVG block from LLM response (e.g. markdown code block).
-    """
+    """Extract first valid SVG block from LLM response (e.g. markdown code block)."""
     match = re.search(r"```(?:svg|xml)?\s*([\s\S]*?)```", text, re.IGNORECASE)
     if match:
         return match.group(1).strip()
@@ -148,12 +87,18 @@ def generate_svg(
     llm_call: Callable[[str], str] | None = None,
     canvas_width: int = 100,
     canvas_height: int = 100,
+    svg_files_dir: str | Path | None = None,
 ) -> SvgResult:
     """
-    Convert natural language prompt to SVG via LLM (or fallback).
-    Pass llm_call=build_llm_call(LLMConfig(...)) to use an on-prem or GCP model.
+    Convert natural language prompt to SVG via the OpenAI LLM.
+    Pass llm_call=build_llm_call(OpenAILLMConfig(...)) to use the OpenAI API.
+    The generated SVG is always written to the svg_files folder (default: top-level "svg_files").
     """
-    llm = llm_call or _default_llm_adapter
+    if llm_call is None:
+        raise ValueError(
+            "LLM is not configured. Pass llm_call=build_llm_call(OpenAILLMConfig(...)) "
+            "to generate_svg or run_pipeline, or set OPENAI_API_KEY and use build_llm_call(OpenAILLMConfig())."
+        )
     system_prompt = (
         "You are a helpful assistant that generates SVG graphics. "
         "Given a description, output only valid SVG markup (2D only, no 3D). "
@@ -162,13 +107,23 @@ def generate_svg(
     )
     user_content = f"Generate an SVG for: {prompt}"
     full_prompt = f"{system_prompt}\n\n{user_content}"
-    response = llm(full_prompt)
+    response = llm_call(full_prompt)
     raw_svg = _extract_svg_from_response(response)
     if raw_svg is None or not _validate_svg_basic(raw_svg):
-        raw_svg = _fallback_circle_svg()
+        raise ValueError(
+            "LLM did not return valid SVG. Ensure the model outputs SVG markup (e.g. inside a markdown code block)."
+        )
+
+    # Always save SVG to the svg_files folder (top-level in project, same level as src)
+    svg_dir = Path(svg_files_dir) if svg_files_dir is not None else _default_svg_files_dir()
+    svg_dir.mkdir(parents=True, exist_ok=True)
+    svg_file = svg_dir / "stage1_output.svg"
+    svg_file.write_text(raw_svg, encoding="utf-8")
+
     metadata = {
         "prompt": prompt,
         "canvas_width": canvas_width,
         "canvas_height": canvas_height,
+        "svg_path": str(svg_file.resolve()),
     }
     return SvgResult(svg_content=raw_svg, metadata=metadata)

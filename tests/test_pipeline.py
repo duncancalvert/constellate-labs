@@ -8,7 +8,7 @@ import pytest
 
 from constellate_labs.models import ProcessedPath
 from constellate_labs.pipeline import (
-    LLMConfig,
+    OpenAILLMConfig,
     build_llm_call,
     enforce_constraints,
     export_skybrush,
@@ -19,40 +19,28 @@ from constellate_labs.pipeline import (
 )
 
 
-def test_stage1_generate_svg_fallback() -> None:
-    result = generate_svg("a green dragon", llm_call=None)
-    assert result.svg_content
-    assert "<svg" in result.svg_content.lower()
-    assert "</svg>" in result.svg_content.lower()
-    assert result.metadata["prompt"] == "a green dragon"
+def test_stage1_requires_llm() -> None:
+    """generate_svg raises when llm_call is not configured."""
+    with pytest.raises(ValueError, match="LLM is not configured"):
+        generate_svg("a green dragon", llm_call=None)
 
 
-def test_stage1_custom_llm() -> None:
+def test_stage1_custom_llm(tmp_path: Path) -> None:
     def mock_llm(prompt: str) -> str:
         return '```svg\n<svg xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40"/></svg>\n```'
 
-    result = generate_svg("circle", llm_call=mock_llm)
+    result = generate_svg("circle", llm_call=mock_llm, svg_files_dir=tmp_path)
     assert "circle" in result.svg_content
     assert result.metadata["prompt"] == "circle"
+    svg_file = tmp_path / "stage1_output.svg"
+    assert svg_file.exists()
+    assert "circle" in svg_file.read_text()
 
 
-def test_build_llm_call_on_prem_returns_callable() -> None:
-    config = LLMConfig(provider="on_prem", model_name="test-model", base_url="http://localhost:9999")
+def test_build_llm_call_openai_returns_callable() -> None:
+    config = OpenAILLMConfig(model="gpt-4o")
     callable_ = build_llm_call(config)
     assert callable(callable_)
-
-
-def test_build_llm_call_gcp_returns_callable() -> None:
-    config = LLMConfig(provider="gcp", model_name="gemini-1.5-flash", project_id="test-proj", location="us-central1")
-    callable_ = build_llm_call(config)
-    assert callable(callable_)
-
-
-def test_build_llm_call_unknown_provider_raises() -> None:
-    config = LLMConfig(provider="on_prem", model_name="x")
-    setattr(config, "provider", "invalid")
-    with pytest.raises(ValueError, match="Unknown LLM provider"):
-        build_llm_call(config)
 
 
 def test_stage2_process_geometry() -> None:
@@ -98,11 +86,21 @@ def test_stage5_export_skybrush() -> None:
 
 
 def test_run_pipeline_e2e(tmp_path: Path) -> None:
+    def mock_llm(prompt: str) -> str:
+        return '```svg\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40"/></svg>\n```'
+
     out = tmp_path / "show.json"
-    show = run_pipeline("a simple circle", output_path=str(out))
+    show = run_pipeline(
+        "a simple circle",
+        llm_call=mock_llm,
+        output_path=str(out),
+        svg_files_dir=tmp_path,
+    )
     assert len(show.waypoints) >= 1
     assert show.skybrush_format["trajectories"]
     assert out.read_text()
     data = json.loads(out.read_text())
     assert data["name"] == "Constellate Show"
     assert "trajectories" in data
+    # Stage 1 SVG is always saved to svg_files dir (we passed tmp_path for test)
+    assert (tmp_path / "stage1_output.svg").exists()
