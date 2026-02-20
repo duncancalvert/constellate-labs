@@ -1,7 +1,6 @@
 """Stage 2: Deterministic geometry processing (ENG_SPEC §3.2)."""
 
 import xml.etree.ElementTree as ET
-
 import numpy as np
 
 from constellate_labs.models import GeometryResult, ProcessedPath
@@ -13,7 +12,9 @@ from constellate_labs.utils.geometry import (
 
 
 def _parse_svg_path_d(path_d: str) -> np.ndarray:
-    """Parse SVG path 'd' attribute into polyline points using svgpathtools."""
+    """
+    Parse SVG path 'd' attribute into polyline points using svgpathtools.
+    """
     try:
         from svgpathtools import parse_path
     except ImportError:
@@ -30,7 +31,9 @@ def _parse_svg_path_d(path_d: str) -> np.ndarray:
 
 
 def _extract_paths_from_svg(svg_content: str) -> list[tuple[np.ndarray, bool]]:
-    """Extract (points, is_closed) for each path/polygon/polyline/circle in SVG."""
+    """
+    Extract (points, is_closed) for each path/polygon/polyline/circle in SVG.
+    """
     results: list[tuple[np.ndarray, bool]] = []
     try:
         root = ET.fromstring(svg_content)

@@ -4,9 +4,12 @@ import json
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from constellate_labs.models import ProcessedPath
 from constellate_labs.pipeline import (
+    LLMConfig,
+    build_llm_call,
     enforce_constraints,
     export_skybrush,
     generate_svg,
@@ -31,6 +34,25 @@ def test_stage1_custom_llm() -> None:
     result = generate_svg("circle", llm_call=mock_llm)
     assert "circle" in result.svg_content
     assert result.metadata["prompt"] == "circle"
+
+
+def test_build_llm_call_on_prem_returns_callable() -> None:
+    config = LLMConfig(provider="on_prem", model_name="test-model", base_url="http://localhost:9999")
+    callable_ = build_llm_call(config)
+    assert callable(callable_)
+
+
+def test_build_llm_call_gcp_returns_callable() -> None:
+    config = LLMConfig(provider="gcp", model_name="gemini-1.5-flash", project_id="test-proj", location="us-central1")
+    callable_ = build_llm_call(config)
+    assert callable(callable_)
+
+
+def test_build_llm_call_unknown_provider_raises() -> None:
+    config = LLMConfig(provider="on_prem", model_name="x")
+    setattr(config, "provider", "invalid")
+    with pytest.raises(ValueError, match="Unknown LLM provider"):
+        build_llm_call(config)
 
 
 def test_stage2_process_geometry() -> None:

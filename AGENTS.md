@@ -25,6 +25,7 @@ This file gives AI agents and contributors consistent context for working on the
 
 ## Code layout
 * Pipeline stages live in `src/constellate_labs/pipeline/` (stage1_llm_svg through stage5_skybrush, plus runner).
+* Stage 1 LLM: `LLMConfig` and `build_llm_call()` support on-prem (OpenAI-compatible) and GCP Vertex AI / Model Garden; GCP support is included in production dependencies.
 * Reusable helpers live in `src/constellate_labs/utils/` (geometry, sampling, validation).
 * Data models are in `src/constellate_labs/models.py`. Keep stages modular and use utils for shared logic.
 
